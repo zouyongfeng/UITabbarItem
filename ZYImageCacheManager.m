@@ -1,0 +1,162 @@
+//
+//  ZYImageCacheManager.m
+//  Weibo
+//
+//  Created by lixing.wang on 15/3/4.
+//  Copyright (c) 2015年 zhiyou. All rights reserved.
+//
+
+#import "ZYImageCacheManager.h"
+#import <CommonCrypto/CommonDigest.h>
+
+@interface NSString (MD5)
+
+//返回一个当前字符串md5加密后的结果
+- (NSString *)md5;
+
+@end
+
+@implementation NSString (MD5)
+
+- (NSString *)md5 {
+    const char *cStr = [self UTF8String];
+    unsigned char digest[16];
+    CC_MD5(cStr, (CC_LONG) strlen(cStr), digest); // This is the md5 call
+    
+    NSString *s = [NSString stringWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+                                             digest[0], digest[1],
+                                             digest[2], digest[3],
+                                             digest[4], digest[5],
+                                             digest[6], digest[7],
+                                             digest[8], digest[9],
+                                             digest[10], digest[11],
+                                             digest[12], digest[13],
+                                             digest[14], digest[15]];
+    return s;
+}
+
+@end
+
+@interface ZYImageCacheManager () {
+    NSMutableDictionary *_imageCache; //使用这个字典保存使用过的图片，既加载到内存中的图片
+    //图片是和它的下载网址一一对应的，所以我们可以用网址做key，图片做value
+}
+
+@end
+
+@implementation ZYImageCacheManager
+
++ (instancetype)sharedImageCacheManager {
+    static ZYImageCacheManager *imageCacheManager = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        //NSLog(@"1");
+        imageCacheManager = [[ZYImageCacheManager alloc] init];
+    });
+    return imageCacheManager;
+}
+
+- (instancetype)init {
+    //NSLog(@"2");
+    if (self = [super init]) {
+        _imageCache = [[NSMutableDictionary alloc] initWithCapacity:0];
+
+        //接受一下内存警告
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(clearImageCache) name:UIApplicationDidReceiveMemoryWarningNotification object:nil];
+    }
+    return self;
+}
+
+- (UIImage *)imageFromDictionary:(NSString *)key {
+    return [_imageCache objectForKey:key];
+}
+
+- (UIImage *)imageFromLocal:(NSString *)urlString {
+    //    从本地加载图片，需要一个路径参数
+    //    UIImage imageWithContentsOfFile:<#(NSString *)#>
+    //路径 ＝ 文件夹路径 ＋ 图片的名字
+    //图片的名字不能重复，网址能否当作图片的名字？
+    //http://xx/xxx/xxxxx.jpg，在沙盒中创建文件的时候，文件名不能包含"/"，系统会名字分为两部分，/前为文件夹，/后为文件
+    //也就是说，我们不能用网址作为文件的名称
+
+    //我们对网址进行md5加密，加密后的结果是一串不包含特殊字符的字符串，这段字符串既有唯一性，也能和网址对应上，所以我们用加密后的字符串作为图片的名字
+
+    //对网址进行md5加密作为图片名
+    NSString *imageName = [urlString md5];
+
+    //把图片保存在沙盒中的Library/Caches文件夹下
+    //
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches/ImageCache"];
+
+    //完整的图片路径
+    NSString *imagePath = [path stringByAppendingPathComponent:imageName];
+
+    //从本地读一张图片
+    UIImage *image = [UIImage imageWithContentsOfFile:imagePath];
+
+    return image;
+}
+
+- (void)imageFromNetwork:(NSString *)urlString complete:(complete)complete {
+    //异步下载图片
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        //从网络获取数据
+        NSData *data = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlString]];
+
+        //从二进制生成图片
+        UIImage *image = [UIImage imageWithData:data];
+        //切回主线程
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (complete) {
+                complete(image);
+            }
+        });
+    });
+}
+
+
+- (void)setImage:(UIImage *)image withURL:(NSString *)urlString {
+    [_imageCache setValue:image forKey:urlString];
+}
+
+- (void)saveImage:(UIImage *)image withURL:(NSString *)urlString {
+    //对网址进行md5加密作为图片名
+    NSString *imageName = [urlString md5];
+
+    //把图片保存在沙盒中的Library/Caches文件夹下
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches/ImageCache"];
+
+    //完整的图片路径
+    NSString *imagePath = [path stringByAppendingPathComponent:imageName];
+
+    //使用文件管理系统把图片写入本地
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:path]) {
+        [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    if (![fileManager fileExistsAtPath:imagePath]) {
+        //把文件写入本地
+        [fileManager createFileAtPath:imagePath contents:UIImagePNGRepresentation(image) attributes:nil];
+    }
+}
+
+- (void)clearImageCache {
+    //清空缓存释放内存
+    [_imageCache removeAllObjects];
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches/ImageCache"];
+
+    [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+}
+
+- (long long)imageCacheSize {
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches/ImageCache"];
+    NSDictionary *dict = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
+    long long size = [[dict objectForKey:NSFileSize] longLongValue];
+    return size;
+}
+
+- (void)clearImageCaches {
+    //...
+}
+
+@end
