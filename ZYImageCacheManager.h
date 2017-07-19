@@ -25,6 +25,9 @@ typedef void(^complete)(UIImage* image);//处理图片下载完成后的操作
 //从网络加载图片，因为是异步下载，方法结束的时候图片还没有下载完成，我们没有数据返回
 - (void)imageFromNetwork:(NSString* )urlString complete:(complete)complete;
 
+// 从网络或者缓存中获取图片
+- (void)getImageWithUrl:(NSString *)urlString complete:(complete)complete;
+
 //保存图片到内存中
 - (void)setImage:(UIImage* )image withURL:(NSString* )urlString;
 

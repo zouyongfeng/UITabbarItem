@@ -111,7 +111,36 @@
                 complete(image);
             }
         });
+        
+        if (image != NULL && image) {
+            //加载到内存
+            [self setImage:image withURL:urlString];
+            
+            //加载到本地
+            [self saveImage:image withURL:urlString];
+        }
     });
+}
+
+// 从网络或者缓存中获取图片
+- (void)getImageWithUrl:(NSString *)urlString complete:(complete)complete {
+    //1.从内存中加载图片
+    UIImage *image = [[ZYImageCacheManager sharedImageCacheManager] imageFromDictionary:urlString];
+    
+    if (image) {
+        complete(image);
+    } else {
+        //内存没有图片，就从本地读区图片
+        image = [[ZYImageCacheManager sharedImageCacheManager] imageFromLocal:urlString];
+        if (image) {
+            complete(image);
+        } else {
+            //从本地没有读取到图片，从网络下载
+            [self imageFromNetwork:urlString complete:^(UIImage *image) {
+                complete(image);
+            }];
+        }
+    }
 }
 
 
