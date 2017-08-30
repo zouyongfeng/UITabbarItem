@@ -1,9 +1,9 @@
 //
 //  ZYImageCacheManager.m
-//  Weibo
+//  米庄理财
 //
-//  Created by lixing.wang on 15/3/4.
-//  Copyright (c) 2015年 zhiyou. All rights reserved.
+//  Created by aicai on 15/7/24.
+//  Copyright (c) 2015年 aicai. All rights reserved.
 //
 
 #import "ZYImageCacheManager.h"
@@ -39,7 +39,6 @@
 
 @interface ZYImageCacheManager () {
     NSMutableDictionary *_imageCache; //使用这个字典保存使用过的图片，既加载到内存中的图片
-    //图片是和它的下载网址一一对应的，所以我们可以用网址做key，图片做value
 }
 
 @end
@@ -50,14 +49,12 @@
     static ZYImageCacheManager *imageCacheManager = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        //NSLog(@"1");
         imageCacheManager = [[ZYImageCacheManager alloc] init];
     });
     return imageCacheManager;
 }
 
 - (instancetype)init {
-    //NSLog(@"2");
     if (self = [super init]) {
         _imageCache = [[NSMutableDictionary alloc] initWithCapacity:0];
 
@@ -72,20 +69,10 @@
 }
 
 - (UIImage *)imageFromLocal:(NSString *)urlString {
-    //    从本地加载图片，需要一个路径参数
-    //    UIImage imageWithContentsOfFile:<#(NSString *)#>
-    //路径 ＝ 文件夹路径 ＋ 图片的名字
-    //图片的名字不能重复，网址能否当作图片的名字？
-    //http://xx/xxx/xxxxx.jpg，在沙盒中创建文件的时候，文件名不能包含"/"，系统会名字分为两部分，/前为文件夹，/后为文件
-    //也就是说，我们不能用网址作为文件的名称
-
-    //我们对网址进行md5加密，加密后的结果是一串不包含特殊字符的字符串，这段字符串既有唯一性，也能和网址对应上，所以我们用加密后的字符串作为图片的名字
-
     //对网址进行md5加密作为图片名
     NSString *imageName = [urlString md5];
 
     //把图片保存在沙盒中的Library/Caches文件夹下
-    //
     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches/ImageCache"];
 
     //完整的图片路径
@@ -155,10 +142,8 @@
     //把图片保存在沙盒中的Library/Caches文件夹下
     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches/ImageCache"];
 
-    //完整的图片路径
     NSString *imagePath = [path stringByAppendingPathComponent:imageName];
 
-    //使用文件管理系统把图片写入本地
     NSFileManager *fileManager = [NSFileManager defaultManager];
     if (![fileManager fileExistsAtPath:path]) {
         [fileManager createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];

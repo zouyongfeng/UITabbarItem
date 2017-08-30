@@ -1,9 +1,9 @@
 //
 //  ZYImageCacheManager.h
-//  Weibo
+//  米庄理财
 //
-//  Created by lixing.wang on 15/3/4.
-//  Copyright (c) 2015年 zhiyou. All rights reserved.
+//  Created by aicai on 15/7/24.
+//  Copyright (c) 2015年 aicai. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

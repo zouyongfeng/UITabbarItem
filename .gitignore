@@ -1,0 +1,7 @@
+UITabbarItem.xcodeproj/xcuserdata/
+UITabbarItem.xcworkspace/
+Pods/
+*.swp
+Podfile.lock
+.DS_Store
+UITabbarItem.xcodeproj/project.xcworkspace/xcuserdata/
