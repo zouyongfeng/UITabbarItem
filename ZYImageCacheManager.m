@@ -11,7 +11,7 @@
 
 @interface NSString (MD5)
 
-//返回一个当前字符串md5加密后的结果...ffff
+//返回一个当前字符串md5加密后的结果...
 - (NSString *)md5;
 
 @end
