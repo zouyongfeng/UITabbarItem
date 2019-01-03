@@ -20,6 +20,7 @@
 
 - (NSString *)md5 {
     //
+    // test2
     const char *cStr = [self UTF8String];
     unsigned char digest[16];
     CC_MD5(cStr, (CC_LONG) strlen(cStr), digest); // This is the md5 call
